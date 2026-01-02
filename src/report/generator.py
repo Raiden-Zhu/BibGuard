@@ -204,11 +204,15 @@ class ReportGenerator:
                     if comp.title_similarity < 0.999:
                         status = "Mismatch" if not comp.title_match else "Minor variation"
                         lines.append(f"│    - Title {status} (similarity: {comp.title_similarity:.1%})")
+                        lines.append(f"│      Bib: '{comp.bib_title}'")
+                        lines.append(f"│      Fetched: '{comp.fetched_title}'")
                     
                     # Check Author
                     if comp.author_similarity < 0.999:
                         status = "Mismatch" if not comp.author_match else "Minor variation"
                         lines.append(f"│    - Author {status} (similarity: {comp.author_similarity:.1%})")
+                        lines.append(f"│      Bib: {', '.join(comp.bib_authors)}")
+                        lines.append(f"│      Fetched: {', '.join(comp.fetched_authors)}")
                     
                     # Check Year
                     if not comp.year_match:
@@ -220,11 +224,6 @@ class ReportGenerator:
                         if "mismatch" in issue and ("Title" in issue or "Author" in issue or "Year" in issue):
                             continue
                         lines.append(f"│    - {issue}")
-                
-                if not comp.title_match:
-                    lines.append(f"│  Title Similarity: {comp.title_similarity:.1%}")
-                    lines.append(f"│    Bib: {self._truncate(comp.bib_title, 55)}")
-                    lines.append(f"│    Fetched: {self._truncate(comp.fetched_title, 55)}")
             else:
                 lines.append("│  Status: Unable to verify")
             

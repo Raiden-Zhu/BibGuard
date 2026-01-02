@@ -39,7 +39,7 @@ env/
 .LSOverride
 
 # Project Specific Outputs
-report.txt
+*.txt
 *_only_used_entry.bib
 
 # LaTeX and Bibliography (User Data)
