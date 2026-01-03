@@ -44,6 +44,7 @@ class TexParser:
         self.all_keys: set[str] = set()
         self.lines: list[str] = []
         self.content: str = ""
+        self.parsed_files: set[str] = set()
     
     def parse_file(self, filepath: str) -> dict[str, list[CitationContext]]:
         """Parse a .tex file and extract all citations."""
@@ -51,17 +52,27 @@ class TexParser:
         if not path.exists():
             raise FileNotFoundError(f"TeX file not found: {filepath}")
         
+        # Avoid infinite recursion
+        abs_path = str(path.resolve())
+        if abs_path in self.parsed_files:
+            return {}
+        self.parsed_files.add(abs_path)
+        
         with open(path, 'r', encoding='utf-8', errors='replace') as f:
             content = f.read()
         
-        return self.parse_content(content)
+        return self.parse_content(content, filepath)
     
-    def parse_content(self, content: str) -> dict[str, list[CitationContext]]:
+    def parse_content(self, content: str, filepath: str = "") -> dict[str, list[CitationContext]]:
         """Parse tex content and extract citations."""
         self.content = content
         self.lines = content.split('\n')
         self.citations = {}
         self.all_keys = set()
+        
+        # Recursively parse \input files
+        if filepath:
+            self._parse_inputs(content, filepath)
         
         # Remove comments
         content_no_comments = self._remove_comments(content)
@@ -181,6 +192,21 @@ class TexParser:
         # Normalize whitespace
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
+    
+    def _parse_inputs(self, content: str, filepath: str):
+        """Recursively parse \input commands."""
+        input_pattern = re.compile(r'\\input\{([^}]+)\}')
+        for match in input_pattern.finditer(content):
+            input_path = match.group(1)
+            base_dir = Path(filepath).parent
+            full_path = base_dir / input_path
+            if full_path.suffix == '':
+                full_path = full_path.with_suffix('.tex')
+            try:
+                self.parse_file(str(full_path))
+            except FileNotFoundError:
+                # Skip missing files
+                pass
     
     def is_cited(self, key: str) -> bool:
         """Check if a key is cited in the document."""
